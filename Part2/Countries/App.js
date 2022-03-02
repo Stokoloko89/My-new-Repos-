@@ -1,48 +1,35 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import "./App.css";
-import { nanoid } from "nanoid";
+import Countries from "./Components/Countries";
 
 const App = () => {
-  const [query, setQuery] = useState([]);
-  const [countries, setCountries] = useState([]);
-  const [weather, setWeather] = useState([]);
+  console.log("Component Render");
+  const [query, setQuery] = useState([]); // manages state for the search box
+  const [countries, setCountries] = useState([]); // manages state for countries data recieved from external API
+  const [weather, setWeather] = useState([]); // manages state for weather data recieved from external API
+  const [capitalCity, setCapitalCity] = useState("Pretoria"); // manages state for setting the capital city of a country. This is needed in order to obtain weather data from weather API. Have to set a default capital that will be changed.
 
+  // This is how we obtain data from the external API for countries list.
   const countryHook = () => {
     axios.get("https://restcountries.com/v3.1/all").then((response) => {
       setCountries(response.data);
     });
   };
-
-  const getfilteredCountries = (query, countries) =>
-    query.length < 0
-      ? setQuery([])
-      : countries.filter((country) =>
-          country.name.common
-            .toLowerCase()
-            .includes(query.toString().toLowerCase())
-        );
-  const filteredCountries = getfilteredCountries(query, countries);
-
   useEffect(countryHook, []);
 
+  // This is how to we obtain data from weather API
   const weatherHook = () => {
     const api_key = process.env.REACT_APP_API_KEY;
-    if (filteredCountries.length === 1) {
-      axios
-        .get(
-          `http://api.openweathermap.org/data/2.5/weather?q=${filteredCountries.map(
-            (city) => city.capital
-          )}&appid=${api_key}`
-        )
-        .then((response) => {
-          setWeather(response.data);
-        });
-    }
+    axios
+      .get(
+        `http://api.openweathermap.org/data/2.5/weather?q=${capitalCity}&units=metric&appid=${api_key}` // weather api key must be declared in node before every npm start
+      )
+      .then((response) => {
+        setWeather(response.data);
+      });
   };
-  useEffect(weatherHook, []);
-
-  console.log(weather);
+  useEffect(weatherHook, [capitalCity]);
 
   const showClickedCountry = (e) => {
     setQuery(e.target.value);
@@ -52,72 +39,20 @@ const App = () => {
     setQuery(e.target.value);
   };
 
-  const fourOrLess = () => {
-    if (filteredCountries.length === 1) {
-      return filteredCountries.map((country) => (
-        <div key={nanoid()}>
-          <h2>{country.name.common}</h2>
-          <ul>
-            {" "}
-            <h3>Capital City</h3>
-            {country.capital.map((x) => (
-              <li key={nanoid()}>{x}</li>
-            ))}
-          </ul>
-          <h3>Area : {country.area}</h3>
-          <ul>
-            {" "}
-            <h3>Languages</h3>
-            {Object.values(country.languages).map((x) => (
-              <li key={nanoid()}>{x}</li>
-            ))}
-          </ul>
-          <br></br>
-          <img
-            src={country.flags.png}
-            alt={`national flag of ${country.name.common}`}
-          ></img>
-          <h2>Weather in</h2>
-          {country.capital.map((city) => (
-            <div key={nanoid()}>
-              <b>{city}</b>
-              <p>Temperature is : </p>
-            </div>
-          ))}
-        </div>
-      ));
-    }
-    if (filteredCountries.length >= 10) {
-      return <li key={nanoid()}>Too many matches, please specify a country</li>;
-    }
-    if (filteredCountries.length <= 10 || filteredCountries.length > 1) {
-      return filteredCountries.map((country) => (
-        <div key={nanoid()}>
-          <li key={country.name.common}>
-            {country.name.common}
-            <br></br>
-            <button
-              value={country.name.common}
-              type="submit"
-              onClick={showClickedCountry}
-            >
-              Show Country
-            </button>
-          </li>
-        </div>
-      ));
-    }
-  };
+  const handleCapitalChange = (capital) => setCapitalCity(capital);
 
   return (
     <div>
       <label htmlFor="search">Search Country</label>
       <input id="search" type="text" onChange={searchHandler}></input>
-      <div>
-        <ul>{fourOrLess()}</ul>
-      </div>
+      <Countries
+        countries={countries}
+        weather={weather}
+        query={query}
+        clickedCountry={showClickedCountry}
+        handleCapitalChange={handleCapitalChange}
+      ></Countries>
     </div>
   );
 };
-
 export default App;
