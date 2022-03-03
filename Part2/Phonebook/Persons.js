@@ -5,6 +5,13 @@ function Persons(props) {
       {filteredPersons.map((person) => (
         <p key={person.name}>
           {person.name} {person.number}
+          <button
+            value={person.name}
+            type="button"
+            onClick={props.deleteContact}
+          >
+            delete
+          </button>
         </p>
       ))}
     </div>

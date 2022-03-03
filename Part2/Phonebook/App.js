@@ -20,9 +20,32 @@ const App = () => {
   const addPersonHandler = (e) => {
     e.preventDefault();
 
-    if (persons.some((person) => person.name === newName)) {
+    if (
+      persons.some((person) => person.name === newName && newNum.length === 0)
+    ) {
       alert(`${newName} is already added to the Phonebook`);
       return;
+    }
+    if (
+      persons.some((person) => person.name === newName && newNum.length !== 0)
+    ) {
+      if (
+        window.confirm(
+          `${newName} is already added to the Phonebook, replace the old number with a new one?`
+        )
+      ) {
+        const person = persons.find((person) => person.name === newName);
+        const changedPerson = { ...person, number: newNum };
+        setPersons(
+          persons.map((person) =>
+            person.id !== changedPerson.id ? person : changedPerson
+          )
+        );
+        console.log(changedPerson);
+        console.log(persons);
+        setNewName("");
+        setNewNum("");
+      }
     } else {
       const newPerson = {
         name: newName,
@@ -34,6 +57,25 @@ const App = () => {
         setPersons(persons.concat(returnedPerson));
         setNewName("");
         setNewNum("");
+      });
+    }
+  };
+
+  const deletePersonHandler = (e) => {
+    if (window.confirm(`Are you sure you want to delete ${e.target.value}`)) {
+      const toBeRemoved = persons.filter(
+        (person) => person.name === e.target.value
+      );
+
+      const updatePersons = persons.filter(
+        (person) => person.id !== toBeRemoved[0].id
+      );
+
+      setPersons(updatePersons);
+      setNewName("");
+      setNewNum("");
+      personService.remove(toBeRemoved[0].id).then((success) => {
+        console.log(success);
       });
     }
   };
@@ -59,6 +101,7 @@ const App = () => {
     <div>
       <h2>Phonebook</h2>
       <Filter onChange={(e) => setQuery(e.target.value)}></Filter>
+      <h2>Add a new Contact</h2>
       <PersonForm
         onSubmit={addPersonHandler}
         value={newName}
@@ -68,7 +111,9 @@ const App = () => {
         onNumChange={onChangeNumHandler}
       ></PersonForm>
       <h2>Numbers</h2>
-      <Persons persons={filteredPersons}> </Persons>
+      <Persons persons={filteredPersons} deleteContact={deletePersonHandler}>
+        {" "}
+      </Persons>
     </div>
   );
 };
