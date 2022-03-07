@@ -1,6 +1,12 @@
 const express = require("express");
+const morgan = require("morgan");
 const app = express();
 
+morgan.token("body", (req) => JSON.stringify(req.body));
+
+app.use(
+  morgan(":method :url :status :res[content-length] - :response-time ms :body")
+);
 app.use(express.json());
 
 let persons = [
@@ -59,12 +65,37 @@ app.delete("/api/persons/:id", (request, response) => {
 });
 
 const generateID = () => {
-  const id = Math.random() * 2000;
+  return Math.random() * 2000;
 };
 
 app.post("/api/persons", (request, response) => {
-  const person = request.body;
-  console.log(person);
+  const body = request.body;
+
+  if (!body.name) {
+    return response.status(400).json({
+      error: "Name is missing",
+    });
+  }
+
+  if (!body.number) {
+    return response.status(400).json({
+      error: "Number is missing",
+    });
+  }
+
+  if (persons.find((person) => person.name === body.name)) {
+    return response.status(400).json({
+      error: "Name must be unique. Try again",
+    });
+  }
+
+  const person = {
+    name: body.name,
+    number: body.number,
+    id: generateID(),
+  };
+
+  persons = persons.concat(person);
   response.json(person);
 });
 
